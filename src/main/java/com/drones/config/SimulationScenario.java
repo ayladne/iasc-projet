@@ -1,43 +1,43 @@
 package com.drones.config;
 
 /**
- * Pre-defined simulation scenarios for testing
+ * Scénarios de simulation prédéfinis pour les tests
  */
 public enum SimulationScenario {
     
     NO_ANOMALIES(
         "Pas d'anomalies",
-        0.0,      // spawn probability
-        0.9,      // decay rate
-        0.05      // diffusion
+        0.0, // probabilité d'apparition
+        0.9, // taux de décomposition
+        0.05 // diffusion
     ),
     
     SPARSE_ANOMALIES(
         "Anomalies sporadiques",
-        0.02,     // spawn probability
-        0.93,     // decay rate
-        0.08      // diffusion
+        0.02, // probabilité d'apparition
+        0.93, // taux de décomposition
+        0.08 // diffusion
     ),
     
     NORMAL_SCENARIO(
         "Scénario normal",
-        0.05,     // spawn probability
-        0.95,     // decay rate
-        0.10      // diffusion
+        0.05, // probabilité d'apparition
+        0.95, // taux de décomposition
+        0.10 // diffusion
     ),
     
     HEAVY_POLLUTION(
         "Pollution intense",
-        0.15,     // spawn probability
-        0.92,     // decay rate
-        0.15      // diffusion
+        0.15, // probabilité d'apparition
+        0.92, // taux de décomposition
+        0.15 // diffusion
     ),
     
     RAPIDLY_SPREADING(
         "Propagation rapide",
-        0.08,     // spawn probability
-        0.90,     // decay rate
-        0.20      // diffusion
+        0.08, // probabilité d'apparition
+        0.90, // taux de décomposition
+        0.20 // diffusion
     );
     
     public final String name;
@@ -53,7 +53,7 @@ public enum SimulationScenario {
     }
     
     public static void applyScenario(SimulationScenario scenario) {
-        // In a real project, we'd use dependency injection
-        // For now, this is a placeholder for dynamic parameter adjustment
+        // Dans un vrai projet, on utiliserait l'injection de dépendances
+        // Pour maintenant, ceci est un placeholder pour l'ajustement dynamique des paramètres
     }
 }
