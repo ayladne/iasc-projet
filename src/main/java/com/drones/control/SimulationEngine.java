@@ -12,6 +12,8 @@ public class SimulationEngine {
     private SimulationMetrics metrics;
     private Coordinator coordinator;
     private int tickCount;
+    private List<String> eventLog; // Logging des événements
+    private Map<Integer, List<double[]>> droneTrajectories; // Trajectoires des drones
     
     public SimulationEngine() {
         this.environment = new Environment(SimulationParams.GRID_WIDTH, SimulationParams.GRID_HEIGHT);
@@ -21,10 +23,14 @@ public class SimulationEngine {
         this.metrics = new SimulationMetrics();
         this.coordinator = new Coordinator();
         this.tickCount = 0;
+        this.eventLog = new ArrayList<>();
+        this.droneTrajectories = new HashMap<>();
         
         // Initialize drones at base (0, 0)
         for (int i = 0; i < SimulationParams.NUM_DRONES; i++) {
-            drones.add(new Drone(i, 0, 0));
+            Drone drone = new Drone(i, 0, 0);
+            drones.add(drone);
+            droneTrajectories.put(i, new ArrayList<>());
         }
         
         // Initialize waypoints (simple raster scan)
@@ -75,7 +81,16 @@ public class SimulationEngine {
         
         // Update drones
         for (Drone drone : drones) {
+            double oldState = drone.getState().ordinal();
             drone.update(SimulationParams.TICK_DURATION_MS);
+            
+            // Track trajectory
+            droneTrajectories.get(drone.getId()).add(new double[]{drone.getX(), drone.getY()});
+            
+            // Log state changes
+            if (drone.getState().ordinal() != oldState) {
+                logEvent("Drone " + drone.getId() + " → " + drone.getState().getLabel());
+            }
             
             // If drone is active and at a waypoint, measure
             if (drone.getState() == DroneState.ACTIVE) {
@@ -84,7 +99,16 @@ public class SimulationEngine {
                     // Add noise to measurement
                     double measured = intensity + (Math.random() - 0.5) * 0.1;
                     drone.addMeasurement(measured, simulationTime, drone.getX(), drone.getY());
+                    logEvent("Drone " + drone.getId() + " détecte anomalie à (" + 
+                            String.format("%.1f", drone.getX()) + "," + 
+                            String.format("%.1f", drone.getY()) + ") - Intensité: " +
+                            String.format("%.2f", measured));
                 }
+            }
+            
+            // Check if returning to base
+            if (drone.getState() == DroneState.RETURNING && drone.isAtBase()) {
+                logEvent("Drone " + drone.getId() + " est retourné à la base");
             }
         }
         
@@ -117,7 +141,24 @@ public class SimulationEngine {
         running = false;
         metrics.reset();
         coordinator.reset();
+        eventLog.clear();
+        for (List<double[]> traj : droneTrajectories.values()) {
+            traj.clear();
+        }
         initializeCoverageWaypoints();
+    }
+    
+    public void logEvent(String message) {
+        String timestamp = String.format("[%.1f s] ", simulationTime / 1000.0);
+        eventLog.add(timestamp + message);
+    }
+    
+    public List<String> getEventLog() {
+        return eventLog;
+    }
+    
+    public Map<Integer, List<double[]>> getDroneTrajectories() {
+        return droneTrajectories;
     }
     
     public Environment getEnvironment() { return environment; }
@@ -133,6 +174,7 @@ public class SimulationEngine {
         public double averageDetectionTime;
         public int activeDrones;
         public int rechargingDrones;
+        private List<MetricsSnapshot> snapshots = new ArrayList<>();
         
         public void update(List<Drone> drones, Environment env, long time) {
             // Count active/charging
@@ -154,6 +196,11 @@ public class SimulationEngine {
             coveragePercentage = (double) cellsWithAnomaly / totalCells * 100.0;
             
             anomaliesDetected = env.getAnomalies().size();
+            
+            // Add snapshot every 5 seconds
+            if (time % 5000 == 0) {
+                snapshots.add(new MetricsSnapshot(time, coveragePercentage, anomaliesDetected, activeDrones, rechargingDrones));
+            }
         }
         
         public void reset() {
@@ -162,6 +209,27 @@ public class SimulationEngine {
             averageDetectionTime = 0;
             activeDrones = 0;
             rechargingDrones = 0;
+            snapshots.clear();
+        }
+        
+        public List<MetricsSnapshot> toSnapshots() {
+            return new ArrayList<>(snapshots);
+        }
+        
+        public static class MetricsSnapshot {
+            public long time;
+            public double coverage;
+            public int anomalies;
+            public int activeDrones;
+            public int rechargingDrones;
+            
+            public MetricsSnapshot(long time, double coverage, int anomalies, int active, int charging) {
+                this.time = time;
+                this.coverage = coverage;
+                this.anomalies = anomalies;
+                this.activeDrones = active;
+                this.rechargingDrones = charging;
+            }
         }
     }
 }

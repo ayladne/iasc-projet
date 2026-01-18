@@ -1,6 +1,7 @@
 package com.drones.metrics;
 
 import com.drones.model.Drone;
+import com.drones.control.SimulationEngine;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -10,20 +11,20 @@ public class ExportUtils {
     /**
      * Export simulation metrics to CSV file
      */
-    public static void exportMetricsToCSV(List<MetricsCollector.MetricsSnapshot> snapshots, 
+    public static void exportMetricsToCSV(List<SimulationEngine.SimulationMetrics.MetricsSnapshot> snapshots, 
                                           String filename) throws IOException {
         try (PrintWriter writer = new PrintWriter(new FileWriter(filename))) {
             // Header
             writer.println("Time(s),Coverage(%),Anomalies,ActiveDrones,ChargingDrones");
             
             // Data
-            for (MetricsCollector.MetricsSnapshot snapshot : snapshots) {
+            for (SimulationEngine.SimulationMetrics.MetricsSnapshot snapshot : snapshots) {
                 writer.printf("%.1f,%.2f,%d,%d,%d%n",
                     snapshot.time / 1000.0,
-                    snapshot.coveragePercent,
-                    snapshot.anomaliesCount,
+                    snapshot.coverage,
+                    snapshot.anomalies,
                     snapshot.activeDrones,
-                    snapshot.chargingDrones
+                    snapshot.rechargingDrones
                 );
             }
         }
