@@ -1,9 +1,7 @@
 package com.drones.control;
-
 import com.drones.config.SimulationParams;
 import com.drones.model.*;
 import java.util.*;
-
 public class SimulationEngine {
     private Environment environment;
     private List<Drone> drones;
@@ -12,7 +10,7 @@ public class SimulationEngine {
     private SimulationMetrics metrics;
     private Coordinator coordinator;
     private int tickCount;
-    private List<String> eventLog; // Logging des événements
+    private List<String> eventLog; // Journal des événements
     private Map<Integer, List<double[]>> droneTrajectories; // Trajectoires des drones
     
     public SimulationEngine() {
@@ -26,14 +24,14 @@ public class SimulationEngine {
         this.eventLog = new ArrayList<>();
         this.droneTrajectories = new HashMap<>();
         
-        // Initialize drones at base (0, 0)
+        // Initialiser les drones à la base (0, 0)
         for (int i = 0; i < SimulationParams.NUM_DRONES; i++) {
             Drone drone = new Drone(i, 0, 0);
             drones.add(drone);
             droneTrajectories.put(i, new ArrayList<>());
         }
         
-        // Initialize waypoints (simple raster scan)
+        // Initialiser les points de passage (balayage raster simple)
         initializeCoverageWaypoints();
     }
     
@@ -44,7 +42,7 @@ public class SimulationEngine {
         for (int i = 0; i < drones.size(); i++) {
             List<double[]> waypoints = new ArrayList<>();
             
-            // Assign a region to each drone
+            // Affecter une région à chaque drone
             int row = i / dronesPerRow;
             int col = i % dronesPerRow;
             
@@ -53,7 +51,7 @@ public class SimulationEngine {
             int endX = Math.min((col + 1) * cellsPerDrone, SimulationParams.GRID_WIDTH);
             int endY = Math.min((row + 1) * cellsPerDrone, SimulationParams.GRID_HEIGHT);
             
-            // Raster scan pattern
+            // Motif de balayage raster
             for (int y = startY; y < endY; y++) {
                 if ((y - startY) % 2 == 0) {
                     for (int x = startX; x < endX; x++) {
@@ -66,7 +64,7 @@ public class SimulationEngine {
                 }
             }
             
-            // Go back to base
+            // Retour à la base
             waypoints.add(new double[]{0, 0});
             
             drones.get(i).setWaypoints(waypoints);
@@ -76,53 +74,48 @@ public class SimulationEngine {
     public void tick() {
         if (!running) return;
         
-        // Update environment
+        // Mettre à jour l'environnement
         environment.update(SimulationParams.TICK_DURATION_MS);
         
-        // Update drones
+        // Mettre à jour les drones
         for (Drone drone : drones) {
-            int oldState = drone.getState().ordinal();
+            double oldState = drone.getState().ordinal();
             drone.update(SimulationParams.TICK_DURATION_MS);
             
-            // Track trajectory
+            // Suivi de la trajectoire
             droneTrajectories.get(drone.getId()).add(new double[]{drone.getX(), drone.getY()});
             
-            // Log state changes
+            // Journal des changements d'état
             if (drone.getState().ordinal() != oldState) {
                 logEvent("Drone " + drone.getId() + " → " + drone.getState().getLabel());
             }
             
-            // If drone is active and at a waypoint, measure
+            // Si le drone est actif et à un point de passage, mesurer
             if (drone.getState() == DroneState.ACTIVE) {
                 double intensity = environment.getAnomalyAt(drone.getX(), drone.getY());
                 if (intensity > SimulationParams.ANOMALY_DETECTION_THRESHOLD) {
-                    // Add noise to measurement
+                    // Ajouter du bruit à la mesure
                     double measured = intensity + (Math.random() - 0.5) * 0.1;
                     drone.addMeasurement(measured, simulationTime, drone.getX(), drone.getY());
                     logEvent("Drone " + drone.getId() + " détecte anomalie à (" + 
-                            String.format("%.1f", drone.getX()) + "," + 
-                            String.format("%.1f", drone.getY()) + ") - Intensité: " +
-                            String.format("%.2f", measured));
+                    String.format("%.1f", drone.getX()) + "," + 
+                    String.format("%.1f", drone.getY()) + ") - Intensité: " +
+                    String.format("%.2f", measured));
                 }
             }
             
-            // Check if returning to base
+            // Vérifier si retour à la base
             if (drone.getState() == DroneState.RETURNING && drone.isAtBase()) {
                 logEvent("Drone " + drone.getId() + " est retourné à la base");
             }
-            
-            // Reassign waypoints when drone finishes charging and becomes ACTIVE
-            if (drone.getState() == DroneState.ACTIVE && oldState == DroneState.CHARGING.ordinal()) {
-                reassignWaypointsToDrone(drone);
-            }
         }
         
-        // Adaptive re-tasking every 30 ticks (6 seconds)
+        // Réaffectation adaptative chaque 30 ticks (6 secondes)
         if (tickCount++ % 30 == 0) {
             coordinator.adaptiveRetasking(drones, environment);
         }
         
-        // Update metrics
+        // Mettre à jour les métriques
         metrics.update(drones, environment, simulationTime);
         
         simulationTime += SimulationParams.TICK_DURATION_MS;
@@ -172,7 +165,7 @@ public class SimulationEngine {
     public boolean isRunning() { return running; }
     public SimulationMetrics getMetrics() { return metrics; }
     
-    // Metrics holder
+    // Conteneur de métriques
     public static class SimulationMetrics {
         public double coveragePercentage;
         public int anomaliesDetected;
@@ -182,11 +175,11 @@ public class SimulationEngine {
         private List<MetricsSnapshot> snapshots = new ArrayList<>();
         
         public void update(List<Drone> drones, Environment env, long time) {
-            // Count active/charging
+            // Compter actifs/recharge
             activeDrones = (int) drones.stream().filter(d -> d.getState() == DroneState.ACTIVE).count();
             rechargingDrones = (int) drones.stream().filter(d -> d.getState() == DroneState.CHARGING).count();
             
-            // Count cells with anomalies detected
+            // Compter les cellules avec anomalies détectées
             double[][] grid = env.getAnomalyIntensity();
             int cellsWithAnomaly = 0;
             for (double[] row : grid) {
@@ -202,7 +195,7 @@ public class SimulationEngine {
             
             anomaliesDetected = env.getAnomalies().size();
             
-            // Add snapshot every 5 seconds
+            // Ajouter un snapshot chaque 5 secondes
             if (time % 5000 == 0) {
                 snapshots.add(new MetricsSnapshot(time, coveragePercentage, anomaliesDetected, activeDrones, rechargingDrones));
             }
@@ -237,41 +230,4 @@ public class SimulationEngine {
             }
         }
     }
-    
-    private void reassignWaypointsToDrone(Drone drone) {
-        int droneId = drone.getId();
-        int dronesPerRow = (int) Math.ceil(Math.sqrt(drones.size()));
-        int cellsPerDrone = SimulationParams.GRID_WIDTH / dronesPerRow;
-        
-        List<double[]> waypoints = new ArrayList<>();
-        
-        // Assign a region to each drone
-        int row = droneId / dronesPerRow;
-        int col = droneId % dronesPerRow;
-        
-        int startX = col * cellsPerDrone;
-        int startY = row * cellsPerDrone;
-        int endX = Math.min((col + 1) * cellsPerDrone, SimulationParams.GRID_WIDTH);
-        int endY = Math.min((row + 1) * cellsPerDrone, SimulationParams.GRID_HEIGHT);
-        
-        // Raster scan pattern
-        for (int y = startY; y < endY; y++) {
-            if ((y - startY) % 2 == 0) {
-                for (int x = startX; x < endX; x++) {
-                    waypoints.add(new double[]{x, y});
-                }
-            } else {
-                for (int x = endX - 1; x >= startX; x--) {
-                    waypoints.add(new double[]{x, y});
-                }
-            }
-        }
-        
-        // Go back to base
-        waypoints.add(new double[]{0, 0});
-        
-        drone.setWaypoints(waypoints);
-        logEvent("Drone " + droneId + " reçoit un nouveau plan de couverture après recharge");
-    }
-
 }
