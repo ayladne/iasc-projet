@@ -81,7 +81,7 @@ public class SimulationEngine {
         
         // Update drones
         for (Drone drone : drones) {
-            double oldState = drone.getState().ordinal();
+            int oldState = drone.getState().ordinal();
             drone.update(SimulationParams.TICK_DURATION_MS);
             
             // Track trajectory
@@ -109,6 +109,11 @@ public class SimulationEngine {
             // Check if returning to base
             if (drone.getState() == DroneState.RETURNING && drone.isAtBase()) {
                 logEvent("Drone " + drone.getId() + " est retourné à la base");
+            }
+            
+            // Reassign waypoints when drone finishes charging and becomes ACTIVE
+            if (drone.getState() == DroneState.ACTIVE && oldState == DroneState.CHARGING.ordinal()) {
+                reassignWaypointsToDrone(drone);
             }
         }
         
@@ -232,4 +237,41 @@ public class SimulationEngine {
             }
         }
     }
+    
+    private void reassignWaypointsToDrone(Drone drone) {
+        int droneId = drone.getId();
+        int dronesPerRow = (int) Math.ceil(Math.sqrt(drones.size()));
+        int cellsPerDrone = SimulationParams.GRID_WIDTH / dronesPerRow;
+        
+        List<double[]> waypoints = new ArrayList<>();
+        
+        // Assign a region to each drone
+        int row = droneId / dronesPerRow;
+        int col = droneId % dronesPerRow;
+        
+        int startX = col * cellsPerDrone;
+        int startY = row * cellsPerDrone;
+        int endX = Math.min((col + 1) * cellsPerDrone, SimulationParams.GRID_WIDTH);
+        int endY = Math.min((row + 1) * cellsPerDrone, SimulationParams.GRID_HEIGHT);
+        
+        // Raster scan pattern
+        for (int y = startY; y < endY; y++) {
+            if ((y - startY) % 2 == 0) {
+                for (int x = startX; x < endX; x++) {
+                    waypoints.add(new double[]{x, y});
+                }
+            } else {
+                for (int x = endX - 1; x >= startX; x--) {
+                    waypoints.add(new double[]{x, y});
+                }
+            }
+        }
+        
+        // Go back to base
+        waypoints.add(new double[]{0, 0});
+        
+        drone.setWaypoints(waypoints);
+        logEvent("Drone " + droneId + " reçoit un nouveau plan de couverture après recharge");
+    }
+
 }
