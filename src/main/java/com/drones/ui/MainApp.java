@@ -27,8 +27,7 @@ public class MainApp extends Application {
     private AnimationTimer animationTimer;
     private TextArea logArea;
     private Label metricsLabel;
-    private Button startButton, pauseButton, stopButton, resetButton, exportButton;
-    private Slider speedSlider;
+ private Button startButton, pauseButton, stopButton, resetButton;    private Slider speedSlider;
     private double speedFactor = 1.0;
     private boolean isPaused = false;
     private int lastEventCount = 0;
@@ -86,13 +85,11 @@ public class MainApp extends Application {
         pauseButton = new Button("⏸ Pause");
         stopButton = new Button("⏹ Stop");
         resetButton = new Button("🔄 Reset");
-        exportButton = new Button("💾 Export CSV");
         
         startButton.setPrefWidth(200);
         pauseButton.setPrefWidth(200);
         stopButton.setPrefWidth(200);
         resetButton.setPrefWidth(200);
-        exportButton.setPrefWidth(200);
         
         startButton.setOnAction(e -> {
             engine.start();
@@ -125,10 +122,8 @@ public class MainApp extends Application {
             engine.logEvent("🔄 Simulation réinitialisée.");
         });
         
-        exportButton.setOnAction(e -> exportResults());
         
-        panel.getChildren().addAll(startButton, pauseButton, stopButton, resetButton, exportButton);
-        
+ panel.getChildren().addAll(startButton, pauseButton, stopButton, resetButton);        
         // Separator
         Separator sep1 = new Separator();
         panel.getChildren().add(sep1);
@@ -367,26 +362,6 @@ public class MainApp extends Application {
         }
     }
     
-    private void exportResults() {
-        FileChooser fc = new FileChooser();
-        fc.setTitle("Exporter résultats");
-        fc.setInitialFileName("simulation_" + System.currentTimeMillis() + ".csv");
-        fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
-        
-        File file = fc.showSaveDialog(null);
-        if (file != null) {
-            try {
-                String basePath = file.getAbsolutePath().replace(".csv", "");
-                ExportUtils.exportMetricsToCSV(engine.getMetrics().toSnapshots(), basePath + "_metrics.csv");
-                ExportUtils.exportMeasurementsToCSV(engine.getDrones(), basePath + "_measurements.csv");
-                engine.logEvent("✅ Export réussi: " + basePath);
-                showAlert("Succès", "Données exportées:\n" + basePath + "_metrics.csv\n" + basePath + "_measurements.csv");
-            } catch (Exception ex) {
-                engine.logEvent("❌ Erreur export: " + ex.getMessage());
-                showAlert("Erreur", "Erreur lors de l'export: " + ex.getMessage());
-            }
-        }
-    }
     
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
