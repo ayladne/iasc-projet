@@ -1,11 +1,9 @@
 package com.drones.model;
-
 import com.drones.config.SimulationParams;
 import java.util.*;
-
 public class Environment {
     private int width, height;
-    private double[][] anomalyIntensity; // grid of anomaly intensity
+    private double[][] anomalyIntensity; // grille d'intensité des anomalies
     private List<Anomaly> anomalies;
     private Random random;
     private long elapsedTime;
@@ -25,7 +23,7 @@ public class Environment {
     public List<Anomaly> getAnomalies() { return anomalies; }
     public long getElapsedTime() { return elapsedTime; }
     
-    // Get anomaly intensity at position (with interpolation)
+    // Obtenir l'intensité des anomalies à une position (avec interpolation)
     public double getAnomalyAt(double x, double y) {
         int ix = (int) Math.floor(x);
         int iy = (int) Math.floor(y);
@@ -37,17 +35,17 @@ public class Environment {
         return anomalyIntensity[iy][ix];
     }
     
-    // Update environment (spawn, diffuse, decay)
+    // Mettre à jour l'environnement (apparition, diffusion, décomposition)
     public void update(long tickDurationMs) {
         elapsedTime += tickDurationMs;
         
-        // Step 1: Spawn new anomalies randomly
+        // Étape 1: Créer de nouvelles anomalies aléatoirement
         spawnAnomalies();
         
-        // Step 2: Decay and diffuse anomalies
+        // Étape 2: Décomposer et diffuser les anomalies
         decayAndDiffuse();
         
-        // Step 3: Remove dead anomalies
+        // Étape 3: Supprimer les anomalies mortes
         anomalies.removeIf(a -> !a.isAlive());
     }
     
@@ -61,14 +59,14 @@ public class Environment {
     }
     
     private void decayAndDiffuse() {
-        // Clear grid
+        // Effacer la grille
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 anomalyIntensity[i][j] = 0;
             }
         }
         
-        // Rebuild grid from anomalies
+        // Reconstruire la grille à partir des anomalies
         for (Anomaly a : anomalies) {
             int ix = (int) Math.round(a.getX());
             int iy = (int) Math.round(a.getY());
@@ -77,11 +75,11 @@ public class Environment {
                 anomalyIntensity[iy][ix] += a.getIntensity();
             }
             
-            // Decay
+            // Décomposer
             a.decay(SimulationParams.ANOMALY_DECAY_RATE);
         }
         
-        // Diffuse to neighbors
+        // Diffuser vers les voisins
         double[][] newIntensity = new double[height][width];
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
@@ -93,7 +91,7 @@ public class Environment {
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 if (anomalyIntensity[i][j] > 0) {
-                    // Spread to neighbors
+                    // Propager aux voisins
                     for (int di = -1; di <= 1; di++) {
                         for (int dj = -1; dj <= 1; dj++) {
                             if (di == 0 && dj == 0) continue;
@@ -109,7 +107,7 @@ public class Environment {
             }
         }
         
-        // Clamp and copy back
+        // Restreindre et copier
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 anomalyIntensity[i][j] = Math.min(1.0, newIntensity[i][j]);
@@ -117,7 +115,7 @@ public class Environment {
         }
     }
     
-    // Clear environment
+    // Effacer l'environnement
     public void reset() {
         anomalies.clear();
         for (int i = 0; i < height; i++) {
