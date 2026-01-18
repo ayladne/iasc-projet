@@ -1,18 +1,16 @@
 package com.drones.model;
-
 import com.drones.config.SimulationParams;
 import java.util.*;
-
 public class Drone {
     private int id;
     private double x, y;
     private double targetX, targetY;
     private DroneState state;
     private long autonomyRemaining; // ms
-    private long measurementTimer; // ms, counts down during measurement
-    private long rechargingTimer; // ms, counts down during recharge
+    private long measurementTimer; // ms, compte à rebours pendant la mesure
+    private long rechargingTimer; // ms, compte à rebours pendant la recharge
     private List<Measurement> measurements;
-    private Deque<double[]> waypoints; // queue of (x,y) targets
+    private Deque<double[]> waypoints; // file d'attente de cibles (x,y)
     
     public Drone(int id, double startX, double startY) {
         this.id = id;
@@ -35,23 +33,23 @@ public class Drone {
     public long getAutonomyRemaining() { return autonomyRemaining; }
     public List<Measurement> getMeasurements() { return measurements; }
     
-    // Add a measurement (from sensor reading)
+    // Ajouter une mesure (provenant d'une lecture de capteur)
     public void addMeasurement(double intensity, long timestamp, double x, double y) {
         measurements.add(new Measurement(intensity, timestamp, x, y));
     }
     
-    // Clear local measurements (upload to base)
+    // Effacer les mesures locales (télécharger à la base)
     public void clearMeasurements() {
         measurements.clear();
     }
     
-    // Set waypoints for planned path
+    // Définir les points de passage pour le chemin planifié
     public void setWaypoints(List<double[]> points) {
         waypoints.clear();
         waypoints.addAll(points);
     }
     
-    // Get next waypoint
+    // Obtenir le prochain point de passage
     private boolean updateTargetWaypoint() {
         if (waypoints.isEmpty()) {
             return false;
@@ -60,7 +58,7 @@ public class Drone {
         targetX = next[0];
         targetY = next[1];
         
-        // Check if reached target
+        // Vérifier si cible est atteinte
         double dist = Math.sqrt(Math.pow(x - targetX, 2) + Math.pow(y - targetY, 2));
         if (dist < 0.5) {
             waypoints.poll();
@@ -69,10 +67,10 @@ public class Drone {
         return true;
     }
     
-    // Move towards target
+    // Se déplacer vers la cible
     private void moveToward(double tx, double ty, double tickDurationS) {
         double dist = Math.sqrt(Math.pow(tx - x, 2) + Math.pow(ty - y, 2));
-        if (dist < 0.1) return; // already there
+        if (dist < 0.1) return; // déjà là
         
         double speed = SimulationParams.DRONE_SPEED;
         double moveDistance = speed * tickDurationS;
@@ -82,17 +80,17 @@ public class Drone {
         y += (ty - y) * ratio;
     }
     
-    // Update drone state each tick
+    // Mettre à jour l'état du drone à chaque tick
     public void update(long tickDurationMs) {
         double tickDurationS = tickDurationMs / 1000.0;
         
         switch (state) {
             case ACTIVE:
-                // Update waypoint if needed
+                // Mettre à jour le point de passage si nécessaire
                 updateTargetWaypoint();
-                // Move towards target
+                // Se déplacer vers la cible
                 moveToward(targetX, targetY, tickDurationS);
-                // Consume autonomy
+                // Consommer l'autonomie
                 autonomyRemaining -= tickDurationMs;
                 if (autonomyRemaining <= 0) {
                     setState(DroneState.RETURNING);
@@ -102,7 +100,7 @@ public class Drone {
                 break;
                 
             case MEASURING:
-                // Count down measurement
+                // Compte à rebours de la mesure
                 measurementTimer -= tickDurationMs;
                 autonomyRemaining -= tickDurationMs;
                 if (measurementTimer <= 0) {
@@ -114,13 +112,13 @@ public class Drone {
                 break;
                 
             case RETURNING:
-                // Move back to base (0, 0)
+                // Se déplacer vers la base (0, 0)
                 double dist = Math.sqrt(x * x + y * y);
                 if (dist < 0.5) {
-                    // Reached base
+                    // Base atteinte
                     setState(DroneState.CHARGING);
                     rechargingTimer = SimulationParams.DRONE_RECHARGE_MS;
-                    measurements.clear(); // upload to base
+                    measurements.clear(); // télécharger à la base
                 } else {
                     moveToward(0, 0, tickDurationS);
                     autonomyRemaining -= tickDurationMs;
@@ -137,23 +135,23 @@ public class Drone {
         }
     }
     
-    // Start measuring at current position
+    // Commencer une mesure à la position actuelle
     public void startMeasurement() {
         setState(DroneState.MEASURING);
         measurementTimer = SimulationParams.MEASUREMENT_DURATION_MS;
     }
     
-    // Set state
+    // Définir l'état
     public void setState(DroneState newState) {
         this.state = newState;
     }
     
-    // Convenience: is at base?
+    // Commodité: est à la base?
     public boolean isAtBase() {
         return Math.sqrt(x * x + y * y) < 0.5;
     }
     
-    // Measurement record
+    // Enregistrement des mesures
     public static class Measurement {
         public double intensity;
         public long timestamp;
