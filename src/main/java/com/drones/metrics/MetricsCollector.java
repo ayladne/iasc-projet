@@ -1,13 +1,11 @@
 package com.drones.metrics;
-
 import com.drones.model.Drone;
 import com.drones.model.Environment;
 import java.util.*;
-
 public class MetricsCollector {
     private List<MetricsSnapshot> snapshots;
     private long lastSnapshotTime;
-    private static final long SNAPSHOT_INTERVAL = 5000; // 5 seconds
+    private static final long SNAPSHOT_INTERVAL = 5000; // 5 secondes
     
     public MetricsCollector() {
         snapshots = new ArrayList<>();
@@ -16,11 +14,11 @@ public class MetricsCollector {
     
     public void snapshot(List<Drone> drones, Environment env, long time) {
         if (time - lastSnapshotTime >= SNAPSHOT_INTERVAL) {
-            // Count active/charging drones
+            // Compter les drones actifs/en recharge
             int active = (int) drones.stream().filter(d -> d.getState().name().equals("ACTIVE")).count();
             int charging = (int) drones.stream().filter(d -> d.getState().name().equals("CHARGING")).count();
             
-            // Calculate coverage
+            // Calculer la couverture
             double[][] grid = env.getAnomalyIntensity();
             int cellsWithAnomaly = 0;
             for (double[] row : grid) {
@@ -62,7 +60,7 @@ public class MetricsCollector {
         public int totalDrones;
         
         public MetricsSnapshot(long time, double coverage, int anomalies, 
-                              int active, int charging, int total) {
+            int active, int charging, int total) {
             this.time = time;
             this.coveragePercent = coverage;
             this.anomaliesCount = anomalies;
