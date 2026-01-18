@@ -127,6 +127,7 @@ public class MainApp extends Application {
         // Separator
         Separator sep1 = new Separator();
         panel.getChildren().add(sep1);
+         \n // Window size control\n Label sizeLabel = new Label("Taille Fenetre");\n sizeLabel.setStyle("-fx-font-size: 11; -fx-font-weight: bold;");\n panel.getChildren().add(sizeLabel);\n \n Button shrinkButton = new Button("Reduire");\n Button expandButton = new Button("Agrandir");\n Button fitButton = new Button("Ajuster");\n \n shrinkButton.setPrefWidth(200);\n expandButton.setPrefWidth(200);\n fitButton.setPrefWidth(200);\n \n shrinkButton.setOnAction(e -> {\n primaryStage.setWidth(primaryStage.getWidth() * 0.8);\n primaryStage.setHeight(primaryStage.getHeight() * 0.8);\n });\n \n expandButton.setOnAction(e -> {\n primaryStage.setWidth(primaryStage.getWidth() * 1.2);\n primaryStage.setHeight(primaryStage.getHeight() * 1.2);\n });\n \n fitButton.setOnAction(e -> {\n primaryStage.setWidth(1000);\n primaryStage.setHeight(850);\n });\n \n panel.getChildren().addAll(shrinkButton, expandButton, fitButton);
         
         // Speed control
         Label speedLabel = new Label("Vitesse Simulation");
