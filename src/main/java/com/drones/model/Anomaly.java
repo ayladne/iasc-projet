@@ -1,8 +1,7 @@
 package com.drones.model;
-
 public class Anomaly {
     private double x, y;
-    private double intensity; // 0 to 1
+    private double intensity; 
     private double maxIntensity;
     private long creationTime;
     
